@@ -265,21 +265,16 @@ if __name__ == '__main__':
     
     amount_of_columns = terminal_width//LEN_LINE
 
-    host_obs = []
+    host_obs, host_info = [], []
     host_list = get_hosts_list()
-    # host_list = ["bishop"]
-    host_info = []
     cmd = "nvidia-smi"
     csv_cmd = "nvidia-smi --query-gpu=timestamp,name,pci.bus_id,driver_version,pstate,pcie.link.gen.max,pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used --format=csv"
 
     amount_dashes = LEN_LINE*amount_of_columns - 2
     table_line = "+" + "-"*amount_dashes + "+"
 
-    
-
     print(table_line) 
     first_time = True
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = [executor.submit(process_host, host, host_observation) for host, host_observation in zip(host_list, host_obs)]
 
