@@ -250,6 +250,11 @@ class NV_csv(object):
                 txt += text_in_color(f"{self.host} GPU [{i}]: {gpu_percent}%; {self.get_gpu_used(i)}/{self.get_gpu_total(i)}", "green") + '\n'
         return txt
 
+def get_host_txt(host, csv_cmd, host_obs):
+    if check_host(host):
+        host_NV = NV_csv(host, csv_cmd, host_obs)
+        return host_NV.run()
+    return f"{host} not on"
 
 if __name__ == '__main__':
     
@@ -271,13 +276,8 @@ if __name__ == '__main__':
 
     print(table_line) 
     first_time = True
-    for i, host in enumerate(host_list):
-        if check_host(host):
-            host_NV = NV_csv(host, csv_cmd, host_obs[i])
-            run_txt = host_NV.run()
-            host_info.append(run_txt)
-        else:
-            host_info.append(f"{host} not on")
+    for host, host_observation in zip(host_list, host_obs):
+        host_info.append(get_host_txt(host, csv_cmd, host_observation))
 
         if len(host_info) == amount_of_columns:
             print_host_table(host_info, colList=["Host"]*amount_of_columns, sep='\n', first_time=first_time)
