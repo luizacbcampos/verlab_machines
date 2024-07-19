@@ -2,6 +2,7 @@ import os
 import re
 import csv
 import subprocess
+import concurrent.futures
 from datetime import datetime
 
 LEN_LINE = 80
@@ -250,9 +251,9 @@ class NV_csv(object):
                 txt += text_in_color(f"{self.host} GPU [{i}]: {gpu_percent}%; {self.get_gpu_used(i)}/{self.get_gpu_total(i)}", "green") + '\n'
         return txt
 
-def get_host_txt(host, csv_cmd, host_obs):
+def process_host(host, host_observation):
     if check_host(host):
-        host_NV = NV_csv(host, csv_cmd, host_obs)
+        host_NV = NV_csv(host, csv_cmd, host_observation)
         return host_NV.run()
     return f"{host} not on"
 
@@ -274,15 +275,21 @@ if __name__ == '__main__':
     amount_dashes = LEN_LINE*amount_of_columns - 2
     table_line = "+" + "-"*amount_dashes + "+"
 
+    
+
     print(table_line) 
     first_time = True
-    for host, host_observation in zip(host_list, host_obs):
-        host_info.append(get_host_txt(host, csv_cmd, host_observation))
 
-        if len(host_info) == amount_of_columns:
-            print_host_table(host_info, colList=["Host"]*amount_of_columns, sep='\n', first_time=first_time)
-            first_time = False
-            host_info = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = [executor.submit(process_host, host, host_observation) for host, host_observation in zip(host_list, host_obs)]
+
+        for future in concurrent.futures.as_completed(results):
+            host_info.append(future.result())
+
+            if len(host_info) == amount_of_columns:
+                print_host_table(host_info, colList=["Host"]*amount_of_columns, sep='\n', first_time=first_time)
+                first_time = False
+                host_info = []
 
     if len(host_info) != 0:
         print_host_table(host_info, colList=["Host"]*amount_of_columns, sep='\n', first_time=first_time)
