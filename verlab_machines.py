@@ -57,7 +57,10 @@ def re_match(line, pattern):
     return match
 
 def run_cmd(host, cmd):
-    out, errors = subprocess.Popen(f"ssh {host} {cmd}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=40)
+    try:
+        out, errors = subprocess.Popen(f"ssh {host} {cmd}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=40)
+    except subprocess.TimeoutExpired:
+        return "TimeoutExpired"
     out = out.decode('ascii')
     errors = errors.decode('ascii')
     if "nvidia-smi: command not found" in errors:
@@ -65,9 +68,11 @@ def run_cmd(host, cmd):
     return out
 
 def check_host(host):
-    cmd = f"ssh -o ConnectTimeout=5 {host} exit"
+    cmd = f"ssh -o ConnectTimeout=7 {host} exit"
     out, errors = subprocess.Popen(f"{cmd}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     errors = errors.decode("ascii")
+    if errors.startswith("################################################"): # Warning message CRC is displaying on the terminal.
+        return True
     if errors != "":
         return False
     return True
@@ -174,6 +179,9 @@ class NV_csv(object):
         '''
         if "NVIDIA-SMI has failed" in output:
             txt = "{} failure\n".format(self.host)
+            return True, txt
+        elif "Timeout expired" in output:
+            txt = "{} timeout expired\n".format(self.host)
             return True, txt
         return False, ""
 
