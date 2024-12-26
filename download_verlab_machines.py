@@ -61,7 +61,11 @@ def download_new_version(docs_link):
     This function downloads the new version of the verlab machines csv file.
     '''
     download_command = f"wget --no-check-certificate -O temp.csv '{docs_link}'"
-    out, errors = subprocess.Popen(download_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=40)
+    try:
+        out, errors = subprocess.Popen(download_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=10)
+    except subprocess.TimeoutExpired:
+        print("Timeout. File not downloaded")
+        exit(1)
 
     # Check if the file was downloaded
     if os.path.exists("temp.csv"):
@@ -74,5 +78,4 @@ if __name__ == '__main__':
     with open("doc_info", "r") as file:
         doc_key, gid = file.read().strip().split("\n")
     docs_link = f"https://docs.google.com/spreadsheets/d/{doc_key}/export?gid={gid}&format=csv"
-
     download_new_version(docs_link)

@@ -33,7 +33,11 @@ def get_hosts_list():
                  "epona", "escher", "eva", "ghost", "nymeria", "roomba", "marvin", "magritte", 
                  "kaya", "kiora", "shaggydog", "wall-e", ]
     # Run download_verlab_machines.py
-    out, errors = subprocess.Popen("python download_verlab_machines.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=40)
+    try:
+        out, errors = subprocess.Popen("python download_verlab_machines.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate(timeout=40)
+    except subprocess.TimeoutExpired:
+        print("Could not get new host list. Using default list.")
+        return default_host_list
 
     # Read the csv file
     try:
@@ -72,6 +76,8 @@ def check_host(host):
     out, errors = subprocess.Popen(f"{cmd}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     errors = errors.decode("ascii")
     if errors.startswith("################################################"): # Warning message CRC is displaying on the terminal.
+        if errors.endswith("password:"):
+            return False
         return True
     if errors != "":
         return False
@@ -285,7 +291,6 @@ if __name__ == '__main__':
     first_time = True
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = [executor.submit(process_host, host, host_observation) for host, host_observation in zip(host_list, host_obs)]
-
         for future in concurrent.futures.as_completed(results):
             host_info.append(future.result())
 
